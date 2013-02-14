@@ -8,9 +8,11 @@ AC_REVISION([$$])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADER([config/config.h])
 AC_CONFIG_MACRO_DIR([m4])
-AC_PROG_CC([clang gcc cc])
-AC_USE_SYSTEM_EXTENSIONS
 AM_MAINTAINER_MODE
+
+AC_PROG_CC([clang gcc cc])
+AC_PROG_CXX([clang++ g++ c++])
+AC_PROG_OBJC([clang gcc cc])
 
 #
 # On Mac OS X, some required header files come from other source packages;
@@ -112,7 +114,7 @@ AS_IF([test "x$enable_apple_semaphore_optimizations" = "xyes"],
     [Define to use non-portablesemaphore optimizations for Mac OS X])]
 )
 
-AC_PROG_CXX
+AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AC_PATH_PROGS(MIG, mig)
@@ -178,7 +180,7 @@ AM_CONDITIONAL(USE_MIG, $have_mach)
 # in support for pthread work queues.
 #
 AC_CHECK_HEADER([pthread_workqueue.h],
-  [AC_DEFINE(HAVE_PTHREAD_WORKQUEUES, 1,Define if pthread work queues are present)]
+  [AC_DEFINE(HAVE_PTHREAD_WORKQUEUES, 1, [Define if pthread work queues are present])]
 )
 
 #
