@@ -98,6 +98,7 @@
 #if HAVE_MALLOC_MALLOC_H
 #include <malloc/malloc.h>
 #endif
+#include <sys/user.h>
 #include <sys/event.h>
 #include <sys/mount.h>
 #include <sys/queue.h>
