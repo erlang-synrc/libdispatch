@@ -39,6 +39,13 @@
 #define FD_COPY(f, t) (void)(*(t) = *(f))
 #endif
 
+#if !HAVE_DECL_TAILQ_FOREACH_SAFE
+#define TAILQ_FOREACH_SAFE(var, head, field, tvar)                      \
+        for ((var) = TAILQ_FIRST((head));                               \
+            (var) && ((tvar) = TAILQ_NEXT((var), field), 1);            \
+            (var) = (tvar))
+#endif
+
 #if !HAVE_NORETURN_BUILTIN_TRAP
 /*
  * XXXRW: Work-around for possible clang bug in which __builtin_trap() is not
