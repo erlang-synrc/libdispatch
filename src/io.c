@@ -392,9 +392,11 @@ dispatch_io_create_with_path(dispatch_io_type_t type, const char *path,
 		int err = 0;
 		struct stat st;
 		_dispatch_io_syscall_switch_noerr(err,
-			(path_data->oflag & O_NOFOLLOW) == O_NOFOLLOW ||
-					(path_data->oflag & O_SYMLINK) == O_SYMLINK ?
-					lstat(path_data->path, &st) : stat(path_data->path, &st),
+			(path_data->oflag & O_NOFOLLOW) == O_NOFOLLOW
+#if HAVE_DECL_O_SYMLINK
+					|| (path_data->oflag & O_SYMLINK) == O_SYMLINK
+#endif
+					? lstat(path_data->path, &st) : stat(path_data->path, &st),
 			case 0:
 				err = _dispatch_io_validate_type(channel, st.st_mode);
 				break;
