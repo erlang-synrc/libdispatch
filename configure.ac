@@ -113,7 +113,8 @@ AC_SEARCH_LIBS(pthread_create, pthread)
 #
 # Prefer native kqueue(2); otherwise use libkqueue if present.
 #
-AC_CHECK_HEADER(sys/event.h, [],
+AC_CHECK_HEADER(sys/event.h,
+  [AC_SEARCH_LIBS(kqueue, kqueue)],
   [PKG_CHECK_MODULES(KQUEUE, libkqueue)]
 )
 
@@ -167,8 +168,9 @@ AM_CONDITIONAL(USE_MIG, $have_mach)
 # We use the availability of pthread_workqueue.h to decide whether to compile
 # in support for pthread work queues.
 #
-AC_CHECK_HEADER([pthread_workqueue.h],
-  [AC_DEFINE(HAVE_PTHREAD_WORKQUEUES, 1, [Define if pthread work queues are present])]
+AC_CHECK_HEADER([pthread_workqueue.h], [
+  AC_SEARCH_LIBS(pthread_workqueue_create_np, pthread_workqueue)
+  AC_DEFINE(HAVE_PTHREAD_WORKQUEUES, 1, [Define if pthread work queues are present])]
 )
 
 #
