@@ -167,7 +167,9 @@ struct dispatch_operation_s {
 	dispatch_source_t timer;
 	bool active;
 	int count;
+#if HAVE_DECL_F_RDADVISE
 	off_t advise_offset;
+#endif
 	void* buf;
 	dispatch_op_flags_t flags;
 	size_t buf_siz, buf_len, undelivered, total;

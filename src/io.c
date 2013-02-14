@@ -65,8 +65,10 @@ static void _dispatch_stream_source_handler(void *ctx);
 static void _dispatch_stream_handler(void *ctx);
 static void _dispatch_disk_handler(void *ctx);
 static void _dispatch_disk_perform(void *ctxt);
+#if HAVE_DECL_F_RDADVISE
 static void _dispatch_operation_advise(dispatch_operation_t op,
 		size_t chunk_size);
+#endif // HAVE_DECL_F_RDADVISE
 static int _dispatch_operation_perform(dispatch_operation_t op);
 static void _dispatch_operation_deliver_data(dispatch_operation_t op,
 		dispatch_op_flags_t flags);
@@ -1815,7 +1817,9 @@ static void
 _dispatch_disk_perform(void *ctxt)
 {
 	dispatch_disk_t disk = ctxt;
+#if HAVE_DECL_F_RDADVISE
 	size_t chunk_size = dispatch_io_defaults.chunk_pages * PAGE_SIZE;
+#endif // HAVE_DECL_F_RDADVISE
 	_dispatch_io_debug("disk perform", -1);
 	dispatch_operation_t op;
 	size_t i = disk->advise_idx, j = disk->free_idx;
@@ -1843,6 +1847,7 @@ _dispatch_disk_perform(void *ctxt)
 			_dispatch_io_debug("initial delivery", op->fd_entry->fd);
 			_dispatch_operation_deliver_data(op, DOP_DELIVER);
 		}
+#if HAVE_DECL_F_RDADVISE
 		// Advise two chunks if the list only has one element and this is the
 		// first advise on the operation
 		if ((j-i) == 1 && !disk->advise_list[disk->free_idx] &&
@@ -1850,6 +1855,7 @@ _dispatch_disk_perform(void *ctxt)
 			chunk_size *= 2;
 		}
 		_dispatch_operation_advise(op, chunk_size);
+#endif // HAVE_DECL_F_RDADVISE
 	} while (++i < j);
 	disk->advise_idx = i%disk->advise_list_depth;
 	op = disk->advise_list[disk->req_idx];
@@ -1891,6 +1897,7 @@ _dispatch_disk_perform(void *ctxt)
 #pragma mark -
 #pragma mark dispatch_operation_perform
 
+#if HAVE_DECL_F_RDADVISE
 static void
 _dispatch_operation_advise(dispatch_operation_t op, size_t chunk_size)
 {
@@ -1918,6 +1925,7 @@ _dispatch_operation_advise(dispatch_operation_t op, size_t chunk_size)
 		default: (void)dispatch_assume_zero(err); break;
 	);
 }
+#endif // HAVE_DECL_F_RDADVISE
 
 static int
 _dispatch_operation_perform(dispatch_operation_t op)
