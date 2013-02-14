@@ -176,8 +176,10 @@
 
 DISPATCH_NOINLINE
 void _dispatch_bug(size_t line, long val);
+#if HAVE_MACH
 DISPATCH_NOINLINE
 void _dispatch_bug_mach_client(const char *msg, mach_msg_return_t kr);
+#endif /* HAVE_MACH */
 DISPATCH_NOINLINE DISPATCH_NORETURN
 void _dispatch_abort(size_t line, long val);
 DISPATCH_NOINLINE __attribute__((__format__(printf,1,2)))

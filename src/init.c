@@ -187,6 +187,7 @@ _dispatch_bug(size_t line, long val)
 	}
 }
 
+#if HAVE_MACH
 void
 _dispatch_bug_mach_client(const char* msg, mach_msg_return_t kr)
 {
@@ -198,6 +199,7 @@ _dispatch_bug_mach_client(const char* msg, mach_msg_return_t kr)
 				mach_error_string(kr), kr);
 	}
 }
+#endif /* HAVE_MACH */
 
 void
 _dispatch_abort(size_t line, long val)
