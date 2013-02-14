@@ -63,6 +63,7 @@ void __builtin_trap(void);
 
 #include "shims/getprogname.h"
 #include "shims/malloc_zone.h"
+#include "shims/strlcpy.h"
 #include "shims/time.h"
 
 #ifdef __APPLE__
