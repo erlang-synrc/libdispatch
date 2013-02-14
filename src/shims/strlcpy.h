@@ -28,7 +28,7 @@
  * Returns strlen(src); if retval >= siz, truncation occurred.
  */
 #if !HAVE_STRLCPY
-static size_t
+static inline size_t
 strlcpy(char *dst, const char *src, size_t siz)
 {
 	char *d = dst;
