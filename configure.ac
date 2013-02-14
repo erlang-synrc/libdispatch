@@ -89,6 +89,12 @@ AS_IF([test "x$LEAKS" != "x"],
 
 AM_INIT_AUTOMAKE([foreign])
 
+AC_ARG_ENABLE([testing],
+  [AS_HELP_STRING([--enable-testing],
+    [Compile testing stuff.])]
+)
+AM_CONDITIONAL(COMPILE_TESTING, [test "x$enable_testing" != "xno"])
+
 DISPATCH_C_ATOMIC_BUILTINS
 
 case $dispatch_cv_atomic in

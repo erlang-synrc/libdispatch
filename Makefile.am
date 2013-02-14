@@ -4,12 +4,15 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
+if COMPILE_TESTING
+	TESTING = testing
+endif
+
 SUBDIRS=					\
 	dispatch				\
 	man						\
 	private					\
-	src						\
-	testing
+	src $(TESTING)
 
 EXTRA_DIST=					\
 	LICENSE					\
