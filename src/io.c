@@ -1450,7 +1450,7 @@ _dispatch_disk_init(dispatch_fd_entry_t fd_entry, dev_t dev)
 	disk->dev = dev;
 	TAILQ_INIT(&disk->operations);
 	disk->cur_rq = TAILQ_FIRST(&disk->operations);
-	sprintf(label_name, "com.apple.libdispatch-io.deviceq.%d", dev);
+	sprintf(label_name, "com.apple.libdispatch-io.deviceq.%lu", (unsigned long)dev);
 	disk->pick_queue = dispatch_queue_create(label_name, NULL);
 	TAILQ_INSERT_TAIL(&_dispatch_io_devs[hash], disk, disk_list);
 out:

@@ -1839,8 +1839,10 @@ _dispatch_timer_debug_attr(dispatch_source_t ds, char* buf, size_t bufsiz)
 	dispatch_source_refs_t dr = ds->ds_refs;
 	return snprintf(buf, bufsiz, "timer = { target = 0x%llx, "
 			"last_fire = 0x%llx, interval = 0x%llx, flags = 0x%llx }, ",
-			ds_timer(dr).target, ds_timer(dr).last_fire, ds_timer(dr).interval,
-			ds_timer(dr).flags);
+			(unsigned long long)ds_timer(dr).target,
+			(unsigned long long)ds_timer(dr).last_fire,
+			(unsigned long long)ds_timer(dr).interval,
+			(unsigned long long)ds_timer(dr).flags);
 }
 
 static size_t
