@@ -55,6 +55,7 @@ AS_IF([test "x$dispatch_cv_cblocks" != "xno"], [
           ^{ int k; k=0; }();
 	], [
           AC_MSG_RESULT([-lobjc])
+          AC_DEFINE(HAVE_OBJC_BLOCKS_RUNTIME, 1, [Define if libobjc implements blocks runtime])
 	], [
           AC_MSG_ERROR([can't find Blocks runtime])
 	])

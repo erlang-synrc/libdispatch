@@ -109,8 +109,13 @@
 #include <netinet/in.h>
 
 #ifdef __BLOCKS__
+#if HAVE_OBJC_BLOCKS_RUNTIME
+#include <blocks_private.h>
+#include <blocks_runtime.h>
+#else
 #include <Block_private.h>
 #include <Block.h>
+#endif
 #endif /* __BLOCKS__ */
 
 #include <assert.h>
