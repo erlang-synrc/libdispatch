@@ -198,6 +198,18 @@ AM_CONDITIONAL(HAVE_POSIX_SPAWN_START_SUSPENDED, $have_posix_spawn_start_suspend
 AC_CHECK_FUNC([sem_init],
   [have_sem_init=true], [have_sem_init=false]
 )
+AS_IF([test "x$have_sem_init" = "xtrue"], [
+  AC_MSG_CHECKING([whether sem_t can cast to uintptr_t])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#include <stdint.h>
+#include <semaphore.h>
+  ],[sem_t s4; uintptr_t p = (uintptr_t)s4;])], [
+    AC_MSG_RESULT([yes])
+    AC_DEFINE(HAVE_POSIX_SEM_UINTPTR_T, 1, [Define if sem_t can cast to uintptr_t])
+  ], [
+    AC_MSG_RESULT([no])
+  ])  
+])
 
 #
 # We support both Mach semaphores and POSIX semaphores; if the former are

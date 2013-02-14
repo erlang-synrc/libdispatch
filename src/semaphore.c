@@ -576,10 +576,17 @@ _dispatch_thread_semaphore_create(void)
 	}
 	return s4;
 #elif USE_POSIX_SEM
+#if HAVE_POSIX_SEM_UINTPTR_T
 	sem_t s4;
 	int ret = sem_init(&s4, 0, 0);
 	DISPATCH_SEMAPHORE_VERIFY_RET(ret);
 	return s4;
+#else
+	sem_t *s4 = (sem_t *)malloc(sizeof(sem_t));
+	int ret = sem_init(s4, 0, 0);
+	DISPATCH_SEMAPHORE_VERIFY_RET(ret);
+	return (_dispatch_thread_semaphore_t)s4;
+#endif
 #endif
 }
 
@@ -592,9 +599,16 @@ _dispatch_thread_semaphore_dispose(_dispatch_thread_semaphore_t sema)
 	kern_return_t kr = semaphore_destroy(mach_task_self(), s4);
 	DISPATCH_SEMAPHORE_VERIFY_KR(kr);
 #elif USE_POSIX_SEM
+#if HAVE_POSIX_SEM_UINTPTR_T
 	sem_t s4 = (sem_t)sema;
 	int ret = sem_destroy(&s4);
 	DISPATCH_SEMAPHORE_VERIFY_RET(ret);
+#else
+	sem_t *s4 = (sem_t *)sema;
+	int ret = sem_destroy(s4);
+	DISPATCH_SEMAPHORE_VERIFY_RET(ret);
+	free(s4);
+#endif
 #endif
 }
 
@@ -606,9 +620,15 @@ _dispatch_thread_semaphore_signal(_dispatch_thread_semaphore_t sema)
 	kern_return_t kr = semaphore_signal(s4);
 	DISPATCH_SEMAPHORE_VERIFY_KR(kr);
 #elif USE_POSIX_SEM
+#if HAVE_POSIX_SEM_UINTPTR_T
 	sem_t s4 = (sem_t)sema;
 	int ret = sem_post(&s4);
 	DISPATCH_SEMAPHORE_VERIFY_RET(ret);
+#else
+	sem_t *s4 = (sem_t *)sema;
+	int ret = sem_post(s4);
+	DISPATCH_SEMAPHORE_VERIFY_RET(ret);
+#endif
 #endif
 }
 
@@ -623,12 +643,21 @@ _dispatch_thread_semaphore_wait(_dispatch_thread_semaphore_t sema)
 	} while (slowpath(kr == KERN_ABORTED));
 	DISPATCH_SEMAPHORE_VERIFY_KR(kr);
 #elif USE_POSIX_SEM
+#if HAVE_POSIX_SEM_UINTPTR_T
 	sem_t s4 = (sem_t)sema;
 	int ret;
 	do {
 		ret = sem_wait(&s4);
 	} while (slowpath(ret != 0));
 	DISPATCH_SEMAPHORE_VERIFY_RET(ret);
+#else
+	sem_t *s4 = (sem_t *)sema;
+	int ret;
+	do {
+		ret = sem_wait(s4);
+	} while (slowpath(ret != 0));
+	DISPATCH_SEMAPHORE_VERIFY_RET(ret);
+#endif
 #endif
 }
 
