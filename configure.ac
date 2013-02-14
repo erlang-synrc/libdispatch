@@ -182,6 +182,7 @@ AC_CHECK_DECLS([NOTE_NONE, NOTE_REAP, NOTE_SIGNAL, NOTE_REVOKE], [], [],
   [[#include <sys/event.h>]])
 AC_CHECK_DECLS([O_SYMLINK, F_RDADVISE], [], [], [[#include <fcntl.h>]])
 AC_CHECK_DECLS([TAILQ_FOREACH_SAFE], [], [], [[#include <sys/queue.h>]])
+AC_CHECK_DECLS([EVFILT_MACHPORT], [], [], [[#include <sys/event.h>]])
 AC_CHECK_DECLS([FD_COPY], [], [], [[#include <sys/select.h>]])
 AC_CHECK_DECLS([SIGEMT], [], [], [[#include <signal.h>]])
 AC_CHECK_DECLS([VQ_UPDATE, VQ_VERYLOWDISK], [], [], [[#include <sys/mount.h>]])
