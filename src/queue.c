@@ -783,7 +783,7 @@ _dispatch_queue_init_specific(dispatch_queue_t dq)
 	strlcpy(dqsq->dq_label, "queue-specific", sizeof(dqsq->dq_label));
 	TAILQ_INIT(&dqsq->dqsq_contexts);
 	dispatch_atomic_store_barrier();
-	if (slowpath(!dispatch_atomic_cmpxchg2o(dq, dq_specific_q, NULL, dqsq))) {
+	if (slowpath(!dispatch_atomic_cmpxchg2o(dq, dq_specific_q, NULL, (dispatch_queue_t)dqsq))) {
 		_dispatch_release((dispatch_queue_t)dqsq);
 	}
 }
