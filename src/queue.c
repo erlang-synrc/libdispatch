@@ -473,6 +473,10 @@ libdispatch_init(void)
 			== 0);
 #endif
 
+#if !HAVE_PTHREAD_MAIN_NP
+	_pthread_main = pthread_self();
+#endif
+
 	_dispatch_thread_key_create(&dispatch_queue_key, _dispatch_queue_cleanup);
 	_dispatch_thread_key_create(&dispatch_sema4_key,
 			(void (*)(void *))_dispatch_thread_semaphore_dispose);
@@ -2396,16 +2400,11 @@ _dispatch_main_queue_callback_4CF(mach_msg_header_t *msg DISPATCH_UNUSED)
 void
 dispatch_main(void)
 {
-#if HAVE_PTHREAD_MAIN_NP
 	if (pthread_main_np()) {
-#endif
 		_dispatch_program_is_probably_callback_driven = true;
 		pthread_exit(NULL);
 		DISPATCH_CRASH("pthread_exit() returned");
-#if HAVE_PTHREAD_MAIN_NP
 	}
-	DISPATCH_CLIENT_CRASH("dispatch_main() must be called on the main thread");
-#endif
 }
 
 DISPATCH_NOINLINE DISPATCH_NORETURN

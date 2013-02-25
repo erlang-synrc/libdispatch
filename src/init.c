@@ -80,6 +80,10 @@ void *(*_dispatch_begin_NSAutoReleasePool)(void) = (void *)dummy_function;
 void (*_dispatch_end_NSAutoReleasePool)(void *) = (void *)dummy_function;
 #endif
 
+#if !HAVE_PTHREAD_MAIN_NP
+pthread_t _pthread_main;
+#endif
+
 #if !DISPATCH_USE_DIRECT_TSD
 pthread_key_t dispatch_queue_key;
 pthread_key_t dispatch_sema4_key;
