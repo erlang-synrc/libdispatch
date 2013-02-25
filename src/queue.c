@@ -44,10 +44,14 @@ static int _dispatch_pthread_sigmask(int how, sigset_t *set, sigset_t *oset);
 static bool _dispatch_mgr_wakeup(dispatch_queue_t dq);
 static dispatch_queue_t _dispatch_mgr_thread(dispatch_queue_t dq);
 
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 static unsigned int _dispatch_worker_threads;
 static dispatch_once_t _dispatch_main_q_port_pred;
+#if DISPATCH_COCOA_COMPAT
 static mach_port_t main_q_port;
+#else
+static int main_q_port[2];
+#endif
 
 static void _dispatch_main_q_port_init(void *ctxt);
 static void _dispatch_queue_wakeup_main(void);
@@ -1398,7 +1402,7 @@ struct dispatch_barrier_sync_slow_s {
 
 struct dispatch_barrier_sync_slow2_s {
 	dispatch_queue_t dbss2_dq;
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 	dispatch_function_t dbss2_func;
 	void *dbss2_ctxt;
 #endif
@@ -1411,7 +1415,7 @@ _dispatch_barrier_sync_f_slow_invoke(void *ctxt)
 	struct dispatch_barrier_sync_slow2_s *dbss2 = ctxt;
 
 	dispatch_assert(dbss2->dbss2_dq == _dispatch_queue_get_current());
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 	// When the main queue is bound to the main thread
 	if (dbss2->dbss2_dq == &_dispatch_main_q && pthread_main_np()) {
 		dbss2->dbss2_func(dbss2->dbss2_ctxt);
@@ -1440,7 +1444,7 @@ _dispatch_barrier_sync_f_slow(dispatch_queue_t dq, void *ctxt,
 
 	struct dispatch_barrier_sync_slow2_s dbss2 = {
 		.dbss2_dq = dq,
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 		.dbss2_func = func,
 		.dbss2_ctxt = ctxt,
 #endif
@@ -1457,7 +1461,7 @@ _dispatch_barrier_sync_f_slow(dispatch_queue_t dq, void *ctxt,
 	_dispatch_thread_semaphore_wait(dbss2.dbss2_sema);
 	_dispatch_put_thread_semaphore(dbss2.dbss2_sema);
 
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 	// Main queue bound to main thread
 	if (dbss2.dbss2_func == NULL) {
 		return;
@@ -1567,7 +1571,7 @@ dispatch_barrier_sync_f(dispatch_queue_t dq, void *ctxt,
 }
 
 #ifdef __BLOCKS__
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 DISPATCH_NOINLINE
 static void
 _dispatch_barrier_sync_slow(dispatch_queue_t dq, void (^work)(void))
@@ -1589,7 +1593,7 @@ _dispatch_barrier_sync_slow(dispatch_queue_t dq, void (^work)(void))
 void
 dispatch_barrier_sync(dispatch_queue_t dq, void (^work)(void))
 {
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 	if (slowpath(dq == &_dispatch_main_q)) {
 		return _dispatch_barrier_sync_slow(dq, work);
 	}
@@ -1695,7 +1699,7 @@ dispatch_sync_f(dispatch_queue_t dq, void *ctxt, dispatch_function_t func)
 }
 
 #ifdef __BLOCKS__
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 DISPATCH_NOINLINE
 static void
 _dispatch_sync_slow(dispatch_queue_t dq, void (^work)(void))
@@ -1716,7 +1720,7 @@ _dispatch_sync_slow(dispatch_queue_t dq, void (^work)(void))
 void
 dispatch_sync(dispatch_queue_t dq, void (^work)(void))
 {
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 	if (slowpath(dq == &_dispatch_main_q)) {
 		return _dispatch_sync_slow(dq, work);
 	}
@@ -1846,7 +1850,7 @@ _dispatch_wakeup(dispatch_object_t dou)
 	// if the source is suspended or canceled.
 	if (!dispatch_atomic_cmpxchg2o(dou._do, do_suspend_cnt, 0,
 			DISPATCH_OBJECT_SUSPEND_LOCK)) {
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 		if (dou._dq == &_dispatch_main_q) {
 			_dispatch_queue_wakeup_main();
 		}
@@ -1860,15 +1864,16 @@ _dispatch_wakeup(dispatch_object_t dou)
 				// probe does
 }
 
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 DISPATCH_NOINLINE
 void
 _dispatch_queue_wakeup_main(void)
 {
-	kern_return_t kr;
-
 	dispatch_once_f(&_dispatch_main_q_port_pred, NULL,
 			_dispatch_main_q_port_init);
+
+#if DISPATCH_COCOA_COMPAT
+	kern_return_t kr;
 
 	kr = _dispatch_send_wakeup_main_thread(main_q_port, 0);
 
@@ -1881,6 +1886,19 @@ _dispatch_queue_wakeup_main(void)
 		(void)dispatch_assume_zero(kr);
 		break;
 	}
+#elif DISPATCH_GNUSTEP_COMPAT
+	ssize_t rc;
+	static char zero __attribute__ ((aligned (8)));
+
+	// Don't bother to check for full pipe since it
+	// only means that runtime is slow to empty it
+	// but still have something to drain.
+	rc = write(main_q_port[1], &zero, sizeof(zero));
+	if (rc < 0) {
+		int err = errno;
+		(void)dispatch_assume(err == EAGAIN || err == EWOULDBLOCK);
+	}
+#endif
 
 	_dispatch_safe_fork = false;
 }
@@ -2079,7 +2097,7 @@ _dispatch_queue_serial_drain_till_empty(dispatch_queue_t dq)
 	_dispatch_force_cache_cleanup();
 }
 
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 void
 _dispatch_main_queue_drain(void)
 {
@@ -2246,7 +2264,7 @@ _dispatch_worker_thread2(void *context)
 	_dispatch_thread_setspecific(dispatch_queue_key, dq);
 	qc->dgq_pending = 0;
 
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 	(void)dispatch_atomic_inc(&_dispatch_worker_threads);
 	// ensure that high-level memory management techniques do not leak/crash
 	if (dispatch_begin_thread_4GC) {
@@ -2265,7 +2283,7 @@ _dispatch_worker_thread2(void *context)
 	_dispatch_queue_merge_stats(start);
 #endif
 
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 	_dispatch_end_NSAutoReleasePool(pool);
 	dispatch_end_thread_4GC();
 	if (!dispatch_atomic_dec(&_dispatch_worker_threads) &&
@@ -2346,10 +2364,11 @@ _dispatch_pthread_sigmask(int how, sigset_t *set, sigset_t *oset)
 
 static bool _dispatch_program_is_probably_callback_driven;
 
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 static void
 _dispatch_main_q_port_init(void *ctxt DISPATCH_UNUSED)
 {
+#if DISPATCH_COCOA_COMPAT
 	kern_return_t kr;
 
 	kr = mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE,
@@ -2360,17 +2379,22 @@ _dispatch_main_q_port_init(void *ctxt DISPATCH_UNUSED)
 			MACH_MSG_TYPE_MAKE_SEND);
 	DISPATCH_VERIFY_MIG(kr);
 	(void)dispatch_assume_zero(kr);
+#elif DISPATCH_GNUSTEP_COMPAT
+	int rc;
+
+	// Make the pipe endpoints non-blocking
+	rc = pipe2(main_q_port, O_NONBLOCK);
+	(void)dispatch_assume_zero(rc);
+
+#if __linux__
+	// On linux, reduce the pipe buffer to only on page
+	rc = fcntl(main_q_port[0], F_SETPIPE_SZ, PAGE_SIZE);
+	(void)dispatch_assume_zero(rc);
+#endif
+#endif
 
 	_dispatch_program_is_probably_callback_driven = true;
 	_dispatch_safe_fork = false;
-}
-
-mach_port_t
-_dispatch_get_main_queue_port_4CF(void)
-{
-	dispatch_once_f(&_dispatch_main_q_port_pred, NULL,
-			_dispatch_main_q_port_init);
-	return main_q_port;
 }
 
 static bool main_q_is_draining;
@@ -2384,6 +2408,7 @@ _dispatch_queue_set_mainq_drain_state(bool arg)
 	main_q_is_draining = arg;
 }
 
+#if DISPATCH_COCOA_COMPAT
 void
 _dispatch_main_queue_callback_4CF(mach_msg_header_t *msg DISPATCH_UNUSED)
 {
@@ -2395,6 +2420,34 @@ _dispatch_main_queue_callback_4CF(mach_msg_header_t *msg DISPATCH_UNUSED)
 	_dispatch_queue_set_mainq_drain_state(false);
 }
 
+mach_port_t
+_dispatch_get_main_queue_port_4CF(void)
+{
+	dispatch_once_f(&_dispatch_main_q_port_pred, NULL,
+			_dispatch_main_q_port_init);
+	return main_q_port;
+}
+#elif DISPATCH_GNUSTEP_COMPAT
+void
+_dispatch_main_queue_callback_4GS(void)
+{
+	if (main_q_is_draining) {
+		return;
+	}
+	_dispatch_queue_set_mainq_drain_state(true);
+	_dispatch_main_queue_drain();
+	_dispatch_queue_set_mainq_drain_state(false);
+}
+
+int
+_dispatch_get_main_queue_port_4GS(void)
+{
+	dispatch_once_f(&_dispatch_main_q_port_pred, NULL,
+			_dispatch_main_q_port_init);
+	return main_q_port[0];
+}
+#endif
+
 #endif
 
 void
@@ -2405,6 +2458,7 @@ dispatch_main(void)
 		pthread_exit(NULL);
 		DISPATCH_CRASH("pthread_exit() returned");
 	}
+	DISPATCH_CLIENT_CRASH("dispatch_main() must be called on the main thread");
 }
 
 DISPATCH_NOINLINE DISPATCH_NORETURN
@@ -2413,7 +2467,7 @@ _dispatch_sigsuspend(void)
 {
 	static const sigset_t mask;
 
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 	// Do not count the signal handling thread as a worker thread
 	(void)dispatch_atomic_dec(&_dispatch_worker_threads);
 #endif
@@ -2697,7 +2751,7 @@ _dispatch_mgr_invoke(void)
 	int k_cnt, err, i, r;
 
 	_dispatch_thread_setspecific(dispatch_queue_key, &_dispatch_mgr_q);
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 	// Do not count the manager thread as a worker thread
 	(void)dispatch_atomic_dec(&_dispatch_worker_threads);
 #endif

@@ -80,8 +80,14 @@ libdispatch_init(void);
 
 #if TARGET_OS_MAC
 #define DISPATCH_COCOA_COMPAT 1
-#if DISPATCH_COCOA_COMPAT
+#endif /* TARGET_OS_MAC */
 
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
+#ifndef __OSX_AVAILABLE_STARTING
+#define __OSX_AVAILABLE_STARTING(A, B)
+#endif
+
+#if DISPATCH_COCOA_COMPAT
 __OSX_AVAILABLE_STARTING(__MAC_10_6,__IPHONE_4_0)
 DISPATCH_EXPORT DISPATCH_CONST DISPATCH_WARN_RESULT DISPATCH_NOTHROW
 mach_port_t
@@ -91,6 +97,15 @@ __OSX_AVAILABLE_STARTING(__MAC_10_6,__IPHONE_4_0)
 DISPATCH_EXPORT DISPATCH_NOTHROW
 void
 _dispatch_main_queue_callback_4CF(mach_msg_header_t *msg);
+#elif DISPATCH_GNUSTEP_COMPAT
+DISPATCH_EXPORT DISPATCH_CONST DISPATCH_WARN_RESULT DISPATCH_NOTHROW
+int
+_dispatch_get_main_queue_port_4GS(void);
+
+DISPATCH_EXPORT DISPATCH_NOTHROW
+void
+_dispatch_main_queue_callback_4GS(void);
+#endif
 
 __OSX_AVAILABLE_STARTING(__MAC_10_6,__IPHONE_4_0)
 DISPATCH_EXPORT
@@ -121,8 +136,7 @@ void (*_dispatch_end_NSAutoReleasePool)(void *);
 #define _dispatch_time_after_sec(t) \
 		dispatch_time(DISPATCH_TIME_NOW, (t) * NSEC_PER_SEC)
 
-#endif
-#endif /* TARGET_OS_MAC */
+#endif /* DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT */
 
 /* pthreads magic */
 

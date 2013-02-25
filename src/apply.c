@@ -203,7 +203,7 @@ dispatch_apply_f(size_t iterations, dispatch_queue_t dq, void *ctxt,
 }
 
 #ifdef __BLOCKS__
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 DISPATCH_NOINLINE
 static void
 _dispatch_apply_slow(size_t iterations, dispatch_queue_t dq,
@@ -218,7 +218,7 @@ _dispatch_apply_slow(size_t iterations, dispatch_queue_t dq,
 void
 dispatch_apply(size_t iterations, dispatch_queue_t dq, void (^work)(size_t))
 {
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 	// Under GC, blocks transferred to other threads must be Block_copy()ed
 	// rdar://problem/7455071
 	if (dispatch_begin_thread_4GC) {

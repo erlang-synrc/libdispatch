@@ -69,14 +69,14 @@ dummy_function_r0(void)
 #pragma mark -
 #pragma mark dispatch_globals
 
-#if DISPATCH_COCOA_COMPAT
+#if DISPATCH_COCOA_COMPAT || DISPATCH_GNUSTEP_COMPAT
 // dispatch_begin_thread_4GC having non-default value triggers GC-only slow
 // paths and is checked frequently, testing against NULL is faster than
 // comparing for equality with "dummy_function"
 void (*dispatch_begin_thread_4GC)(void) = NULL;
 void (*dispatch_end_thread_4GC)(void) = dummy_function;
 void (*dispatch_no_worker_threads_4GC)(void) = NULL;
-void *(*_dispatch_begin_NSAutoReleasePool)(void) = (void *)dummy_function;
+void *(*_dispatch_begin_NSAutoReleasePool)(void) = (void *)dummy_function_r0;
 void (*_dispatch_end_NSAutoReleasePool)(void *) = (void *)dummy_function;
 #endif
 
